@@ -28,6 +28,8 @@ import { PreviewAttachment } from './preview-attachment';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { SuggestedActions } from './suggested-actions';
+import { ChatSuggestionItem } from './chat-suggestion-item';
+import { useChatSuggestions } from '@/hooks/useChatSuggestions';
 import equal from 'fast-deep-equal';
 
 function PureMultimodalInput({
@@ -67,6 +69,8 @@ function PureMultimodalInput({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
+  const { suggestions, isLoading: isSuggestionsLoading } = useChatSuggestions(input);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -230,29 +234,50 @@ function PureMultimodalInput({
         </div>
       )}
 
-      <Textarea
-        ref={textareaRef}
-        placeholder="Send a message..."
-        value={input}
-        onChange={handleInput}
-        className={cx(
-          'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 dark:border-zinc-700',
-          className,
-        )}
-        rows={2}
-        autoFocus
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
+      <div className="relative w-full">
+        <Textarea
+          ref={textareaRef}
+          placeholder="Send a message..."
+          value={input}
+          onChange={handleInput}
+          className={cx(
+            'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 dark:border-zinc-700',
+            className,
+          )}
+          rows={2}
+          autoFocus
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
 
-            if (isLoading) {
-              toast.error('Please wait for the model to finish its response!');
-            } else {
-              submitForm();
+              if (isLoading) {
+                toast.error('Please wait for the model to finish its response!');
+              } else {
+                submitForm();
+              }
             }
-          }
-        }}
-      />
+          }}
+          onFocus={() => setShowSuggestions(true)}
+          onBlur={() => {
+            // Delay hiding suggestions to allow clicking them
+            setTimeout(() => setShowSuggestions(false), 200);
+          }}
+        />
+        {showSuggestions && suggestions.length > 0 && !isLoading && (
+          <div className="absolute bottom-full left-0 w-full bg-background border rounded-lg shadow-lg mb-2 overflow-hidden">
+            {suggestions.map((suggestion, index) => (
+              <ChatSuggestionItem
+                key={index}
+                suggestion={suggestion}
+                onSelect={(text) => {
+                  setInput(text);
+                  setShowSuggestions(false);
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
         <AttachmentsButton fileInputRef={fileInputRef} isLoading={isLoading} />
