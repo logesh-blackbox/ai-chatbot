@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import ReactCrop, { type Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { Button } from './ui/button';
+import { RotateLeftIcon, RotateRightIcon } from './icons';
 
 interface ImageCropperProps {
   file: File;
@@ -12,6 +13,7 @@ interface ImageCropperProps {
 }
 
 export function ImageCropper({ file, onCropComplete, onCancel }: ImageCropperProps) {
+  const [rotation, setRotation] = useState<number>(0);
   const [crop, setCrop] = useState<Crop>({
     unit: '%',
     width: 90,
@@ -31,6 +33,14 @@ export function ImageCropper({ file, onCropComplete, onCancel }: ImageCropperPro
     reader.readAsDataURL(file);
   }, [file]);
 
+  const rotateLeft = () => {
+    setRotation((prev) => (prev - 90) % 360);
+  };
+
+  const rotateRight = () => {
+    setRotation((prev) => (prev + 90) % 360);
+  };
+
   const getCroppedImg = async () => {
     if (!imageRef.current) return;
 
@@ -38,12 +48,20 @@ export function ImageCropper({ file, onCropComplete, onCancel }: ImageCropperPro
     const scaleX = imageRef.current.naturalWidth / imageRef.current.width;
     const scaleY = imageRef.current.naturalHeight / imageRef.current.height;
 
-    canvas.width = crop.width;
-    canvas.height = crop.height;
-    const ctx = canvas.getContext('2d');
+    // Adjust canvas dimensions based on rotation
+    const isRotated90or270 = Math.abs(rotation % 180) === 90;
+    canvas.width = isRotated90or270 ? crop.height : crop.width;
+    canvas.height = isRotated90or270 ? crop.width : crop.height;
 
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Move to center, rotate, and move back
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate((rotation * Math.PI) / 180);
+    ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+    // Draw the rotated and cropped image
     ctx.drawImage(
       imageRef.current,
       crop.x * scaleX,
@@ -52,8 +70,8 @@ export function ImageCropper({ file, onCropComplete, onCancel }: ImageCropperPro
       crop.height * scaleY,
       0,
       0,
-      crop.width,
-      crop.height
+      canvas.width,
+      canvas.height
     );
 
     // Convert canvas to blob
@@ -80,6 +98,7 @@ export function ImageCropper({ file, onCropComplete, onCancel }: ImageCropperPro
                 src={imageSrc}
                 alt="Crop preview"
                 className="max-w-full"
+                style={{ transform: `rotate(${rotation}deg)` }}
               />
             </ReactCrop>
           )}
@@ -87,6 +106,12 @@ export function ImageCropper({ file, onCropComplete, onCancel }: ImageCropperPro
         <div className="flex justify-end gap-2 mt-4">
           <Button variant="outline" onClick={onCancel}>
             Cancel
+          </Button>
+          <Button variant="outline" onClick={rotateLeft} className="px-3">
+            <RotateLeftIcon className="size-4" />
+          </Button>
+          <Button variant="outline" onClick={rotateRight} className="px-3">
+            <RotateRightIcon className="size-4" />
           </Button>
           <Button onClick={getCroppedImg}>
             Crop & Upload

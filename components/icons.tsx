@@ -139,6 +139,44 @@ export const HomeIcon = ({ size = 16 }: { size: number }) => {
   );
 };
 
+export const RotateLeftIcon = ({ className }: { className?: string }) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38" />
+    </svg>
+  );
+};
+
+export const RotateRightIcon = ({ className }: { className?: string }) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38" />
+    </svg>
+  );
+};
+
 export const GPSIcon = ({ size = 16 }: { size: number }) => {
   return (
     <svg
