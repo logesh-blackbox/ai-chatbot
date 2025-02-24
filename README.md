@@ -52,10 +52,17 @@ You will need to use the environment variables [defined in `.env.example`](.env.
 1. Install Vercel CLI: `npm i -g vercel`
 2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
 3. Download your environment variables: `vercel env pull`
+4. **Important**: Set up the database by following the [Database Setup Guide](docs/database-setup.md)
 
+You can verify your setup using our verification script:
 ```bash
-pnpm install
+chmod +x scripts/verify-setup.sh
+./scripts/verify-setup.sh
+```
+
+Once verified, start the development server:
+```bash
 pnpm dev
 ```
 
-Your app template should now be running on [localhost:3000](http://localhost:3000/).
+Your app template should now be running on [localhost:3000](http://localhost:3000/). Make sure you've completed the database setup before trying to register or log in.
