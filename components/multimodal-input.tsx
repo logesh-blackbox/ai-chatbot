@@ -24,6 +24,7 @@ import { useLocalStorage, useWindowSize } from 'usehooks-ts';
 import { sanitizeUIMessages } from '@/lib/utils';
 
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from './icons';
+import { ImageCropper } from './image-cropper';
 import { PreviewAttachment } from './preview-attachment';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -116,6 +117,7 @@ function PureMultimodalInput({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   const submitForm = useCallback(() => {
     window.history.replaceState({}, '', `/chat/${chatId}`);
@@ -170,31 +172,64 @@ function PureMultimodalInput({
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
+      
+      // Reset file input
+      if (event.target) {
+        event.target.value = '';
+      }
 
-      setUploadQueue(files.map((file) => file.name));
-
-      try {
-        const uploadPromises = files.map((file) => uploadFile(file));
-        const uploadedAttachments = await Promise.all(uploadPromises);
-        const successfullyUploadedAttachments = uploadedAttachments.filter(
-          (attachment) => attachment !== undefined,
-        );
-
-        setAttachments((currentAttachments) => [
-          ...currentAttachments,
-          ...successfullyUploadedAttachments,
-        ]);
-      } catch (error) {
-        console.error('Error uploading files!', error);
-      } finally {
-        setUploadQueue([]);
+      for (const file of files) {
+        if (file.type.startsWith('image/')) {
+          setCropFile(file);
+        } else {
+          setUploadQueue((queue) => [...queue, file.name]);
+          try {
+            const attachment = await uploadFile(file);
+            if (attachment) {
+              setAttachments((curr) => [...curr, attachment]);
+            }
+          } catch (error) {
+            console.error('Error uploading file:', error);
+          } finally {
+            setUploadQueue((queue) => queue.filter(name => name !== file.name));
+          }
+        }
       }
     },
     [setAttachments],
   );
 
+  const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
+    if (!cropFile) return;
+    
+    const croppedFile = new File([croppedBlob], cropFile.name, {
+      type: cropFile.type,
+    });
+    
+    setUploadQueue((queue) => [...queue, croppedFile.name]);
+    
+    try {
+      const attachment = await uploadFile(croppedFile);
+      if (attachment) {
+        setAttachments((curr) => [...curr, attachment]);
+      }
+    } catch (error) {
+      console.error('Error uploading cropped file:', error);
+    } finally {
+      setUploadQueue((queue) => queue.filter(name => name !== croppedFile.name));
+      setCropFile(null);
+    }
+  }, [cropFile, uploadFile, setAttachments]);
+
   return (
     <div className="relative w-full flex flex-col gap-4">
+      {cropFile && (
+        <ImageCropper
+          file={cropFile}
+          onCropComplete={handleCropComplete}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
       {messages.length === 0 &&
         attachments.length === 0 &&
         uploadQueue.length === 0 && (
