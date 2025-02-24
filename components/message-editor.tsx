@@ -2,10 +2,12 @@
 
 import { ChatRequestOptions, Message } from 'ai';
 import { Button } from './ui/button';
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback } from 'react';
 import { Textarea } from './ui/textarea';
 import { deleteTrailingMessages } from '@/app/(chat)/actions';
 import { toast } from 'sonner';
+import { LiveSuggestions } from './live-suggestions';
+import { useDebouncedCallback } from 'use-debounce';
 
 export type MessageEditorProps = {
   message: Message;
@@ -27,6 +29,8 @@ export function MessageEditor({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const [draftContent, setDraftContent] = useState<string>(message.content);
+  const [suggestions, setSuggestions] = useState<Array<{ suggestedText: string; description: string }>>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -42,19 +46,58 @@ export function MessageEditor({
     }
   };
 
+  const fetchSuggestions = useDebouncedCallback(async (text: string) => {
+    if (text.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/suggestions/live?text=${encodeURIComponent(text)}`);
+      if (!response.ok) throw new Error('Failed to fetch suggestions');
+      
+      const data = await response.json();
+      setSuggestions(data);
+      setShowSuggestions(true);
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, 500);
+
   const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setDraftContent(event.target.value);
+    const newContent = event.target.value;
+    setDraftContent(newContent);
     adjustHeight();
+    fetchSuggestions(newContent);
+  };
+
+  const handleSuggestionApply = (suggestion: string) => {
+    setDraftContent(suggestion);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
   };
 
   return (
-    <div className="flex flex-col gap-2 w-full">
-      <Textarea
-        ref={textareaRef}
-        className="bg-transparent outline-none overflow-hidden resize-none !text-base rounded-xl w-full"
-        value={draftContent}
-        onChange={handleInput}
-      />
+    <div className="flex flex-col gap-2 w-full relative">
+      <div className="relative">
+        <Textarea
+          ref={textareaRef}
+          className="bg-transparent outline-none overflow-hidden resize-none !text-base rounded-xl w-full"
+          value={draftContent}
+          onChange={handleInput}
+        />
+        <LiveSuggestions
+          suggestions={suggestions}
+          onApply={handleSuggestionApply}
+          visible={showSuggestions}
+        />
+      </div>
 
       <div className="flex flex-row gap-2 justify-end">
         <Button
