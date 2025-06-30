@@ -1,12 +1,12 @@
-
 .toolbar {
   display: flex;
   gap: 0.25rem;
   padding: 0.5rem;
   border-bottom: 1px solid hsl(var(--border));
-  background: hsl(var(--background));
+  background: hsl(var(--muted));
   border-top-left-radius: 1rem;
   border-top-right-radius: 1rem;
+  margin: 0 0.75rem;
 }
 
 .button {
@@ -24,12 +24,13 @@
 }
 
 .button:hover {
-  background: hsl(var(--muted));
+  background: hsl(var(--muted-foreground));
+  color: hsl(var(--background));
 }
 
 .button.active {
-  background: hsl(var(--muted));
-  color: hsl(var(--foreground));
+  background: hsl(var(--muted-foreground));
+  color: hsl(var(--background));
 }
 
 .toolbar-group {

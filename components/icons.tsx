@@ -968,7 +968,7 @@ export const EyeIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
-export const ShareIcon = ({ size = 16 }: { size?: number }) => {
+export const BoldIcon = ({ size = 16 }: { size?: number }) => {
   return (
     <svg
       height={size}
@@ -980,9 +980,28 @@ export const ShareIcon = ({ size = 16 }: { size?: number }) => {
       <path
         fillRule="evenodd"
         clipRule="evenodd"
-        d="M15 11.25V10.5H13.5V11.25V12.75C13.5 13.1642 13.1642 13.5 12.75 13.5H3.25C2.83579 13.5 2.5 13.1642 2.5 12.75L2.5 3.25C2.5 2.83579 2.83579 2.5 3.25 2.5H5.75H6.5V1H5.75H3.25C2.00736 1 1 2.00736 1 3.25V12.75C1 13.9926 2.00736 15 3.25 15H12.75C13.9926 15 15 13.9926 15 12.75V11.25ZM15 5.5L10.5 1V4C7.46243 4 5 6.46243 5 9.5V10L5.05855 9.91218C6.27146 8.09281 8.31339 7 10.5 7V10L15 5.5Z"
+        d="M4 2V3.5V7V8.5V12.5V14H5.5H8.5C10.433 14 12 12.433 12 10.5C12 9.11722 11.1955 7.91939 10.0218 7.39884C10.6809 6.81773 11.1 5.99837 11.1 5.08824C11.1 3.38267 9.71733 2 8.01176 2H5.5H4ZM5.5 7V3.5H8.01176C8.89119 3.5 9.6 4.20881 9.6 5.08824C9.6 5.96766 8.89119 6.67647 8.01176 6.67647H5.5V7ZM5.5 8.5H8.5C9.60457 8.5 10.5 9.39543 10.5 10.5C10.5 11.6046 9.60457 12.5 8.5 12.5H5.5V8.5Z"
         fill="currentColor"
-      ></path>
+      />
+    </svg>
+  );
+};
+
+export const ItalicIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      strokeLinejoin="round"
+      viewBox="0 0 16 16"
+      width={size}
+      style={{ color: 'currentcolor' }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M5 2H8.75H10.25H11V3.5H10.25H9.61159L7.38841 12.5H8H9.5H10.25V14H9.5H5.75H4.25H3.5V12.5H4.25H4.88841L7.11159 3.5H6.5H5H4.25V2H5Z"
+        fill="currentColor"
+      />
     </svg>
   );
 };
@@ -1191,3 +1210,26 @@ export const LineChartIcon = ({ size = 16 }: { size?: number }) => (
     ></path>
   </svg>
 );
+export const BoldIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg height={size} width={size} viewBox="0 0 16 16" style={{ color: "currentcolor" }}>
+      <path fillRule="evenodd" clipRule="evenodd" d="M4 2V3.5V7V8.5V12.5V14H5.5H8.5C10.433 14 12 12.433 12 10.5C12 9.11722 11.1955 7.91939 10.0218 7.39884C10.6809 6.81773 11.1 5.99837 11.1 5.08824C11.1 3.38267 9.71733 2 8.01176 2H5.5H4ZM5.5 7V3.5H8.01176C8.89119 3.5 9.6 4.20881 9.6 5.08824C9.6 5.96766 8.89119 6.67647 8.01176 6.67647H5.5V7ZM5.5 8.5H8.5C9.60457 8.5 10.5 9.39543 10.5 10.5C10.5 11.6046 9.60457 12.5 8.5 12.5H5.5V8.5Z" fill="currentColor"/>
+    </svg>
+  );
+};
+
+export const ItalicIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg height={size} width={size} viewBox="0 0 16 16" style={{ color: "currentcolor" }}>
+      <path fillRule="evenodd" clipRule="evenodd" d="M5 2H8.75H10.25H11V3.5H10.25H9.61159L7.38841 12.5H8H9.5H10.25V14H9.5H5.75H4.25H3.5V12.5H4.25H4.88841L7.11159 3.5H6.5H5H4.25V2H5Z" fill="currentColor"/>
+    </svg>
+  );
+};
+
+export const CodeIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg height={size} width={size} viewBox="0 0 16 16" style={{ color: "currentcolor" }}>
+      <path fillRule="evenodd" clipRule="evenodd" d="M4.21969 12.5303L4.75002 13.0607L5.81068 12L5.28035 11.4697L1.81068 7.99999L5.28035 4.53032L5.81068 3.99999L4.75002 2.93933L4.21969 3.46966L0.39647 7.29289C0.00594562 7.68341 0.00594562 8.31658 0.39647 8.7071L4.21969 12.5303ZM11.7804 12.5303L11.25 13.0607L10.1894 12L10.7197 11.4697L14.1894 7.99999L10.7197 4.53032L10.1894 3.99999L11.25 2.93933L11.7804 3.46966L15.6036 7.29289C15.9941 7.68341 15.9941 8.31658 15.6036 8.7071L11.7804 12.5303Z" fill="currentColor"/>
+    </svg>
+  );
+};

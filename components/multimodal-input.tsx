@@ -1,5 +1,6 @@
 'use client';
 
+import { RichTextInput } from './rich-text-input';
 import type {
   Attachment,
   ChatRequestOptions,
@@ -10,7 +11,6 @@ import cx from 'classnames';
 import type React from 'react';
 import {
   useRef,
-  useEffect,
   useState,
   useCallback,
   type Dispatch,
@@ -20,15 +20,11 @@ import {
 } from 'react';
 import { toast } from 'sonner';
 import { useLocalStorage, useWindowSize } from 'usehooks-ts';
-
 import { sanitizeUIMessages } from '@/lib/utils';
-
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from './icons';
 import { ImageCropper } from './image-cropper';
 import { PreviewAttachment } from './preview-attachment';
 import { Button } from './ui/button';
-import { Textarea } from './ui/textarea';
-import { SuggestedActions } from './suggested-actions';
 import equal from 'fast-deep-equal';
 
 function PureMultimodalInput({
@@ -66,61 +62,19 @@ function PureMultimodalInput({
   ) => void;
   className?: string;
 }) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      adjustHeight();
-    }
-  }, []);
-
-  const adjustHeight = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight + 2}px`;
-    }
-  };
-
-  const resetHeight = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = '98px';
-    }
-  };
-
-  const [localStorageInput, setLocalStorageInput] = useLocalStorage(
-    'input',
-    '',
-  );
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      const domValue = textareaRef.current.value;
-      // Prefer DOM value over localStorage to handle hydration
-      const finalValue = domValue || localStorageInput || '';
-      setInput(finalValue);
-      adjustHeight();
-    }
-    // Only run once after hydration
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [localStorageInput, setLocalStorageInput] = useLocalStorage('input', '');
 
   useEffect(() => {
     setLocalStorageInput(input);
   }, [input, setLocalStorageInput]);
-
-  const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(event.target.value);
-    adjustHeight();
-  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
   const [cropFile, setCropFile] = useState<File | null>(null);
 
   const submitForm = useCallback(() => {
-    window.history.replaceState({}, '', `/chat/${chatId}`);
+    window.history.replaceState({}, '', );
 
     handleSubmit(undefined, {
       experimental_attachments: attachments,
@@ -128,17 +82,11 @@ function PureMultimodalInput({
 
     setAttachments([]);
     setLocalStorageInput('');
-    resetHeight();
-
-    if (width && width > 768) {
-      textareaRef.current?.focus();
-    }
   }, [
     attachments,
     handleSubmit,
     setAttachments,
     setLocalStorageInput,
-    width,
     chatId,
   ]);
 
@@ -199,42 +147,29 @@ function PureMultimodalInput({
     [setAttachments],
   );
 
-  const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
-    if (!cropFile) return;
-    
-    const croppedFile = new File([croppedBlob], cropFile.name, {
-      type: cropFile.type,
-    });
-    
-    setUploadQueue((queue) => [...queue, croppedFile.name]);
-    
-    try {
-      const attachment = await uploadFile(croppedFile);
-      if (attachment) {
-        setAttachments((curr) => [...curr, attachment]);
-      }
-    } catch (error) {
-      console.error('Error uploading cropped file:', error);
-    } finally {
-      setUploadQueue((queue) => queue.filter(name => name !== croppedFile.name));
-      setCropFile(null);
-    }
-  }, [cropFile, uploadFile, setAttachments]);
-
   return (
-    <div className="relative w-full flex flex-col gap-4">
+    <div className={cx('relative', className)}>
       {cropFile && (
         <ImageCropper
           file={cropFile}
-          onCropComplete={handleCropComplete}
-          onCancel={() => setCropFile(null)}
+          onClose={() => setCropFile(null)}
+          onUpload={async (file) => {
+            setUploadQueue((queue) => [...queue, file.name]);
+            try {
+              const attachment = await uploadFile(file);
+              if (attachment) {
+                setAttachments((curr) => [...curr, attachment]);
+              }
+            } catch (error) {
+              console.error('Error uploading file:', error);
+            } finally {
+              setUploadQueue((queue) =>
+                queue.filter((name) => name !== file.name),
+              );
+            }
+          }}
         />
       )}
-      {messages.length === 0 &&
-        attachments.length === 0 &&
-        uploadQueue.length === 0 && (
-          <SuggestedActions append={append} chatId={chatId} />
-        )}
 
       <input
         type="file"
@@ -265,28 +200,19 @@ function PureMultimodalInput({
         </div>
       )}
 
-      <Textarea
-        ref={textareaRef}
+      <RichTextInput
         placeholder="Send a message..."
-        value={input}
-        onChange={handleInput}
-        className={cx(
-          'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 dark:border-zinc-700',
-          className,
-        )}
-        rows={2}
-        autoFocus
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-
-            if (isLoading) {
-              toast.error('Please wait for the model to finish its response!');
-            } else {
-              submitForm();
-            }
+        onChange={setInput}
+        onSubmit={() => {
+          if (isLoading) {
+            toast.error('Please wait for the model to finish its response!');
+          } else {
+            submitForm();
           }
         }}
+        className={className}
+        initialValue={input}
+        isLoading={isLoading}
       />
 
       <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
@@ -313,7 +239,6 @@ export const MultimodalInput = memo(
   (prevProps, nextProps) => {
     if (prevProps.input !== nextProps.input) return false;
     if (prevProps.isLoading !== nextProps.isLoading) return false;
-    if (!equal(prevProps.attachments, nextProps.attachments)) return false;
 
     return true;
   },
@@ -395,3 +320,4 @@ const SendButton = memo(PureSendButton, (prevProps, nextProps) => {
   if (prevProps.input !== nextProps.input) return false;
   return true;
 });
+
