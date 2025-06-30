@@ -987,6 +987,101 @@ export const ShareIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
+export const UnderlineIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      strokeLinejoin="round"
+      viewBox="0 0 16 16"
+      width={size}
+      style={{ color: 'currentcolor' }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M3.5 2.5V7.5C3.5 9.433 5.067 11 7 11H9C10.933 11 12.5 9.433 12.5 7.5V2.5H11V7.5C11 8.60457 10.1046 9.5 9 9.5H7C5.89543 9.5 5 8.60457 5 7.5V2.5H3.5ZM2 13.5V12H14V13.5H2Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
+export const StrikethroughIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      strokeLinejoin="round"
+      viewBox="0 0 16 16"
+      width={size}
+      style={{ color: 'currentcolor' }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M2 7.25V8.75H7C7.14178 9.04524 7.41943 9.30156 7.79847 9.49945C8.22387 9.72239 8.74647 9.875 9.25 9.875C9.75353 9.875 10.2761 9.72239 10.7015 9.49945C11.1269 9.27651 11.5 8.93892 11.5 8.5C11.5 8.43178 11.4911 8.36505 11.4741 8.3H14V6.8H11.0495C10.8694 6.53901 10.6017 6.32893 10.2985 6.16305C9.84776 5.93239 9.28674 5.75 8.75 5.75C8.21326 5.75 7.65224 5.93239 7.20153 6.16305C6.75082 6.39371 6.375 6.74099 6.375 7.25C6.375 7.31822 6.38391 7.38495 6.40089 7.45H2ZM7.875 7.25C7.875 7.17601 8.00418 7.02511 8.29847 6.87195C8.59724 6.71511 8.96674 6.625 9.25 6.625C9.53326 6.625 9.90276 6.71511 10.2015 6.87195C10.4958 7.02511 10.625 7.17601 10.625 7.25C10.625 7.32399 10.4958 7.47489 10.2015 7.62805C9.90276 7.78489 9.53326 7.875 9.25 7.875C8.96674 7.875 8.59724 7.78489 8.29847 7.62805C8.00418 7.47489 7.875 7.32399 7.875 7.25Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
+export const ListBulletIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      strokeLinejoin="round"
+      viewBox="0 0 16 16"
+      width={size}
+      style={{ color: 'currentcolor' }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M2.5 4.5C2.5 3.67157 3.17157 3 4 3C4.82843 3 5.5 3.67157 5.5 4.5C5.5 5.32843 4.82843 6 4 6C3.17157 6 2.5 5.32843 2.5 4.5ZM7 3.75H14V5.25H7V3.75ZM7 7.75H14V9.25H7V7.75ZM7 11.75H14V13.25H7V11.75ZM2.5 8.5C2.5 7.67157 3.17157 7 4 7C4.82843 7 5.5 7.67157 5.5 8.5C5.5 9.32843 4.82843 10 4 10C3.17157 10 2.5 9.32843 2.5 8.5ZM4 11C3.17157 11 2.5 11.6716 2.5 12.5C2.5 13.3284 3.17157 14 4 14C4.82843 14 5.5 13.3284 5.5 12.5C5.5 11.6716 4.82843 11 4 11Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
+export const ListNumberedIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      strokeLinejoin="round"
+      viewBox="0 0 16 16"
+      width={size}
+      style={{ color: 'currentcolor' }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M2.75 2.5H3.5V5.5H2V4H2.75V2.5ZM7 3.75H14V5.25H7V3.75ZM2 8.5H3.75V9H2.75V10H3.75V10.5H2V9H3V8.5H2ZM7 7.75H14V9.25H7V7.75ZM2.25 13H2V12H3.75V14.5H2.25V13ZM7 11.75H14V13.25H7V11.75Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
+export const HeadingIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      strokeLinejoin="round"
+      viewBox="0 0 16 16"
+      width={size}
+      style={{ color: 'currentcolor' }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M2.5 2.5V7V8V13.5H4V8H7.5V13.5H9V8V7V2.5H7.5V7H4V2.5H2.5ZM10.5 7.5H12L13.5 11.5L15 7.5H16.5L14 14.5H13L10.5 7.5Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
 export const CodeIcon = ({ size = 16 }: { size?: number }) => {
   return (
     <svg
