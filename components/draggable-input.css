@@ -1,0 +1,86 @@
+/* Draggable Chat Input Styles */
+
+.draggable-chat-input {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.draggable-chat-input.dragging {
+  transform: scale(1.02);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+}
+
+/* Smooth transitions for position changes */
+.draggable-chat-input:not(.dragging) {
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevent text selection during drag */
+.dragging * {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Drag handle hover effects */
+.drag-handle:hover {
+  background-color: hsl(var(--muted) / 0.8);
+}
+
+/* Minimize/maximize animations */
+.chat-input-minimized {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chat-input-expanded {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: expandInput 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes expandInput {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Mobile touch improvements */
+@media (hover: none) {
+  .drag-handle {
+    background-color: hsl(var(--muted) / 0.5);
+  }
+  
+  .draggable-chat-input {
+    touch-action: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .draggable-chat-input {
+    border: 2px solid hsl(var(--border));
+  }
+  
+  .drag-handle {
+    border: 1px solid hsl(var(--border));
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .draggable-chat-input,
+  .draggable-chat-input.dragging,
+  .draggable-chat-input:not(.dragging),
+  .chat-input-minimized,
+  .chat-input-expanded {
+    transition: none;
+    animation: none;
+  }
+}

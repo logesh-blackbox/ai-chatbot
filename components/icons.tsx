@@ -1006,6 +1006,44 @@ export const CodeIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
+export const BoldIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      strokeLinejoin="round"
+      viewBox="0 0 16 16"
+      width={size}
+      style={{ color: 'currentcolor' }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M3.5 2V1H4.5H8.5C10.433 1 12 2.567 12 4.5C12 5.66667 11.4167 6.70833 10.5 7.25C11.5833 7.79167 12.25 8.91667 12.25 10.1667C12.25 12.3333 10.5833 14 8.41667 14H4.5H3.5V13V2ZM5 2.5V6.5H8.5C9.60457 6.5 10.5 5.60457 10.5 4.5C10.5 3.39543 9.60457 2.5 8.5 2.5H5ZM5 8V12.5H8.41667C9.75 12.5 10.75 11.5 10.75 10.1667C10.75 8.83333 9.75 8 8.41667 8H5Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
+export const ItalicIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      strokeLinejoin="round"
+      viewBox="0 0 16 16"
+      width={size}
+      style={{ color: 'currentcolor' }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M6.5 2V1H7.5H11.5H12.5V2.5H11.5H9.08L6.92 12.5H9.5H10.5V14H9.5H5.5H4.5V12.5H5.5H7.92L10.08 2.5H7.5H6.5V2Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
 export const PlayIcon = ({ size = 16 }: { size?: number }) => {
   return (
     <svg
