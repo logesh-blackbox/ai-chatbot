@@ -1,16 +1,31 @@
 'use client';
 
-import { exampleSetup } from 'prosemirror-example-setup';
 import { Schema } from 'prosemirror-model';
-import { EditorState } from 'prosemirror-state';
+import { EditorState, Transaction } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 import { keymap } from 'prosemirror-keymap';
+import { baseKeymap, toggleMark, wrapIn, setBlockType } from 'prosemirror-commands';
+import { wrapInList, splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
+import { history, undo, redo } from 'prosemirror-history';
+import { InputRule, inputRules, wrappingInputRule, smartQuotes, emDash, ellipsis } from 'prosemirror-inputrules';
 import React, { useEffect, useRef, forwardRef, useImperativeHandle, useState } from 'react';
 import cx from 'classnames';
 import styles from './rich-text-input.module.css';
-import { BoldIcon, ItalicIcon, CodeIcon } from './icons';
+import { 
+  BoldIcon, 
+  ItalicIcon, 
+  CodeIcon,
+  ListIcon,
+  ListOrderedIcon,
+  QuoteIcon,
+  LinkIcon,
+  StrikethroughIcon,
+  UndoIcon,
+  RedoIcon,
+  TypeIcon
+} from 'lucide-react';
 
-// Define a basic schema for chat messages
+// Define an enhanced schema for rich text editing
 const schema = new Schema({
   nodes: {
     doc: {
@@ -19,21 +34,102 @@ const schema = new Schema({
     paragraph: {
       group: 'block',
       content: 'inline*',
-      toDOM() { return ['p', 0] }
+      toDOM() { return ['p', 0] },
+      parseDOM: [{ tag: 'p' }]
+    },
+    blockquote: {
+      group: 'block',
+      content: 'block+',
+      defining: true,
+      toDOM() { return ['blockquote', 0] },
+      parseDOM: [{ tag: 'blockquote' }]
+    },
+    ordered_list: {
+      group: 'block',
+      content: 'list_item+',
+      attrs: { order: { default: 1 } },
+      toDOM(node) {
+        return ['ol', { start: node.attrs.order == 1 ? null : node.attrs.order }, 0];
+      },
+      parseDOM: [{ 
+        tag: 'ol', 
+        getAttrs(dom) {
+          return { order: (dom as HTMLElement).hasAttribute('start') ? +(dom as HTMLElement).getAttribute('start')! : 1 };
+        }
+      }]
+    },
+    bullet_list: {
+      group: 'block',
+      content: 'list_item+',
+      toDOM() { return ['ul', 0] },
+      parseDOM: [{ tag: 'ul' }]
+    },
+    list_item: {
+      content: 'paragraph block*',
+      toDOM() { return ['li', 0] },
+      parseDOM: [{ tag: 'li' }],
+      defining: true
     },
     text: {
       group: 'inline'
+    },
+    hard_break: {
+      inline: true,
+      group: 'inline',
+      selectable: false,
+      toDOM() { return ['br'] },
+      parseDOM: [{ tag: 'br' }]
     }
   },
   marks: {
     strong: {
-      toDOM() { return ['strong', 0] }
+      toDOM() { return ['strong', 0] },
+      parseDOM: [
+        { tag: 'strong' },
+        { tag: 'b' },
+        { style: 'font-weight', getAttrs: (value) => /^(bold(er)?|[5-9]\d{2,})$/.test(value as string) && null }
+      ]
     },
     em: {
-      toDOM() { return ['em', 0] }
+      toDOM() { return ['em', 0] },
+      parseDOM: [
+        { tag: 'i' },
+        { tag: 'em' },
+        { style: 'font-style=italic' }
+      ]
     },
     code: {
-      toDOM() { return ['code', 0] }
+      toDOM() { return ['code', { class: 'inline-code' }, 0] },
+      parseDOM: [{ tag: 'code' }]
+    },
+    strikethrough: {
+      toDOM() { return ['s', 0] },
+      parseDOM: [
+        { tag: 's' },
+        { tag: 'del' },
+        { tag: 'strike' },
+        { style: 'text-decoration', getAttrs: value => (value === 'line-through') && null }
+      ]
+    },
+    link: {
+      attrs: {
+        href: {},
+        title: { default: null }
+      },
+      inclusive: false,
+      toDOM(node) {
+        const { href, title } = node.attrs;
+        return ['a', { href, title, target: '_blank', rel: 'noopener noreferrer' }, 0];
+      },
+      parseDOM: [{
+        tag: 'a[href]',
+        getAttrs(dom) {
+          return {
+            href: (dom as HTMLElement).getAttribute('href'),
+            title: (dom as HTMLElement).getAttribute('title')
+          };
+        }
+      }]
     }
   }
 });
@@ -41,23 +137,119 @@ const schema = new Schema({
 export type RichTextInputRef = {
   focus: () => void;
   getValue: () => string;
+  getMarkdownValue: () => string;
   setValue: (content: string) => void;
   clearContent: () => void;
 };
 
 type RichTextInputProps = {
   placeholder?: string;
-  onChange?: (value: string) => void;
+  onChange?: (value: string, markdown: string) => void;
   onSubmit?: () => void;
   className?: string;
   initialValue?: string;
   isLoading?: boolean;
 };
 
+// Helper function to serialize doc to markdown
+function serializeToMarkdown(doc: any): string {
+  let markdown = '';
+  
+  function serializeNode(node: any): string {
+    let result = '';
+    
+    switch (node.type.name) {
+      case 'paragraph':
+        node.content?.forEach((child: any) => {
+          result += serializeNode(child);
+        });
+        result += '\n\n';
+        break;
+        
+      case 'blockquote':
+        node.content?.forEach((child: any) => {
+          const childContent = serializeNode(child).trim();
+          result += '> ' + childContent.replace(/\n/g, '\n> ') + '\n';
+        });
+        break;
+        
+      case 'bullet_list':
+        node.content?.forEach((item: any) => {
+          result += '- ' + serializeNode(item).trim() + '\n';
+        });
+        result += '\n';
+        break;
+        
+      case 'ordered_list':
+        let order = node.attrs?.order || 1;
+        node.content?.forEach((item: any) => {
+          result += `${order}. ` + serializeNode(item).trim() + '\n';
+          order++;
+        });
+        result += '\n';
+        break;
+        
+      case 'list_item':
+        node.content?.forEach((child: any) => {
+          result += serializeNode(child).trim();
+        });
+        break;
+        
+      case 'text':
+        let text = node.text;
+        
+        // Apply marks
+        if (node.marks) {
+          node.marks.forEach((mark: any) => {
+            switch (mark.type.name) {
+              case 'strong':
+                text = `**${text}**`;
+                break;
+              case 'em':
+                text = `*${text}*`;
+                break;
+              case 'code':
+                text = `\`${text}\``;
+                break;
+              case 'strikethrough':
+                text = `~~${text}~~`;
+                break;
+              case 'link':
+                text = `[${text}](${mark.attrs.href}${mark.attrs.title ? ` "${mark.attrs.title}"` : ''})`;
+                break;
+            }
+          });
+        }
+        result = text;
+        break;
+        
+      case 'hard_break':
+        result = '\n';
+        break;
+    }
+    
+    return result;
+  }
+  
+  doc.content?.forEach((node: any) => {
+    markdown += serializeNode(node);
+  });
+  
+  return markdown.trim();
+}
+
 export const RichTextInput = forwardRef<RichTextInputRef, RichTextInputProps>(
   ({ placeholder = 'Send a message...', onChange, onSubmit, className, initialValue = '', isLoading = false }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<EditorView | null>(null);
+    const [isBold, setIsBold] = useState(false);
+    const [isItalic, setIsItalic] = useState(false);
+    const [isCode, setIsCode] = useState(false);
+    const [isStrikethrough, setIsStrikethrough] = useState(false);
+    const [isLink, setIsLink] = useState(false);
+    const [isList, setIsList] = useState(false);
+    const [isOrderedList, setIsOrderedList] = useState(false);
+    const [isBlockquote, setIsBlockquote] = useState(false);
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -65,8 +257,11 @@ export const RichTextInput = forwardRef<RichTextInputRef, RichTextInputProps>(
       },
       getValue: () => {
         if (!editorRef.current) return '';
-        const content = editorRef.current.state.doc.textContent;
-        return content;
+        return editorRef.current.state.doc.textContent;
+      },
+      getMarkdownValue: () => {
+        if (!editorRef.current) return '';
+        return serializeToMarkdown(editorRef.current.state.doc);
       },
       setValue: (content: string) => {
         if (!editorRef.current) return;
@@ -87,62 +282,234 @@ export const RichTextInput = forwardRef<RichTextInputRef, RichTextInputProps>(
           plugins: setupPlugins()
         });
         editorRef.current.updateState(state);
+        updateToolbarState(state);
       }
     }));
 
-    const toggleMark = (markType: string) => {
-      if (!editorRef.current) return false;
-      const { state, dispatch } = editorRef.current;
-      const { schema, selection, tr } = state;
-      const mark = schema.marks[markType];
+    const updateToolbarState = (state: EditorState) => {
+      const { from, $from } = state.selection;
+      const marks = $from.marks();
       
-      if (!mark) return false;
+      setIsBold(marks.some(m => m.type === schema.marks.strong));
+      setIsItalic(marks.some(m => m.type === schema.marks.em));
+      setIsCode(marks.some(m => m.type === schema.marks.code));
+      setIsStrikethrough(marks.some(m => m.type === schema.marks.strikethrough));
+      setIsLink(marks.some(m => m.type === schema.marks.link));
       
-      if (selection.empty) {
-        // Toggle mark on/off at cursor position
-        const marks = selection.$from.marks();
-        const has = marks.some(m => m.type === mark);
-        tr.addStoredMark(mark, has ? null : mark.create());
-      } else {
-        // Toggle mark on/off in selection
-        const has = state.doc.rangeHasMark(selection.from, selection.to, mark);
-        if (has) {
-          tr.removeMark(selection.from, selection.to, mark);
-        } else {
-          tr.addMark(selection.from, selection.to, mark.create());
+      // Check for list nodes
+      let node = $from.node($from.depth);
+      let inList = false;
+      let inOrderedList = false;
+      let inBlockquote = false;
+      
+      for (let i = $from.depth; i >= 0; i--) {
+        const n = $from.node(i);
+        if (n.type === schema.nodes.bullet_list) {
+          inList = true;
+        } else if (n.type === schema.nodes.ordered_list) {
+          inOrderedList = true;
+        } else if (n.type === schema.nodes.blockquote) {
+          inBlockquote = true;
         }
       }
       
-      dispatch(tr);
+      setIsList(inList);
+      setIsOrderedList(inOrderedList);
+      setIsBlockquote(inBlockquote);
+    };
+
+    const toggleMarkCommand = (markType: string) => {
+      if (!editorRef.current) return;
+      const { state, dispatch } = editorRef.current;
+      const mark = schema.marks[markType];
+      if (!mark) return;
       
-      // Update toolbar state
-      switch (markType) {
-        case 'strong':
-          setIsBold(!isBold);
-          break;
-        case 'em':
-          setIsItalic(!isItalic);
-          break;
-        case 'code':
-          setIsCode(!isCode);
-          break;
+      toggleMark(mark)(state, dispatch);
+      editorRef.current.focus();
+      updateToolbarState(editorRef.current.state);
+    };
+
+    const toggleList = (listType: 'bullet' | 'ordered') => {
+      if (!editorRef.current) return;
+      const { state, dispatch } = editorRef.current;
+      const nodeType = listType === 'bullet' ? schema.nodes.bullet_list : schema.nodes.ordered_list;
+      
+      wrapInList(nodeType)(state, dispatch);
+      editorRef.current.focus();
+      updateToolbarState(editorRef.current.state);
+    };
+
+    const toggleBlockquote = () => {
+      if (!editorRef.current) return;
+      const { state, dispatch } = editorRef.current;
+      
+      wrapIn(schema.nodes.blockquote)(state, dispatch);
+      editorRef.current.focus();
+      updateToolbarState(editorRef.current.state);
+    };
+
+    const insertLink = () => {
+      const url = prompt('Enter URL:');
+      if (!url || !editorRef.current) return;
+      
+      const { state, dispatch } = editorRef.current;
+      const { from, to } = state.selection;
+      const mark = schema.marks.link.create({ href: url });
+      
+      if (from === to) {
+        // No selection, insert URL as text with link
+        const node = schema.text(url, [mark]);
+        dispatch(state.tr.replaceSelectionWith(node));
+      } else {
+        // Apply link to selection
+        dispatch(state.tr.addMark(from, to, mark));
       }
-      return true;
+      
+      editorRef.current.focus();
+      updateToolbarState(editorRef.current.state);
+    };
+
+    const clearFormatting = () => {
+      if (!editorRef.current) return;
+      const { state, dispatch } = editorRef.current;
+      const { from, to } = state.selection;
+      
+      // Remove all marks
+      const tr = state.tr;
+      Object.values(schema.marks).forEach(mark => {
+        tr.removeMark(from, to, mark);
+      });
+      
+      dispatch(tr);
+      editorRef.current.focus();
+      updateToolbarState(editorRef.current.state);
+    };
+
+    const handleUndo = () => {
+      if (!editorRef.current) return;
+      undo(editorRef.current.state, editorRef.current.dispatch);
+      editorRef.current.focus();
+    };
+
+    const handleRedo = () => {
+      if (!editorRef.current) return;
+      redo(editorRef.current.state, editorRef.current.dispatch);
+      editorRef.current.focus();
+    };
+
+    // Setup input rules for markdown shortcuts
+    const buildInputRules = () => {
+      const rules = smartQuotes.concat(ellipsis, emDash);
+      
+      // Bold: **text** or __text__
+      rules.push(
+        new InputRule(/(?:^|[^*])(\*\*|__)([^*_]+)(\*\*|__)$/, (state, match, start, end) => {
+          const [, , text] = match;
+          const tr = state.tr.delete(start + match.index! + match[0].indexOf(match[1]), end);
+          const markStart = start + match.index! + match[0].indexOf(match[1]);
+          const markEnd = markStart + text.length;
+          return tr.addMark(markStart, markEnd, schema.marks.strong.create());
+        })
+      );
+      
+      // Italic: *text* or _text_
+      rules.push(
+        new InputRule(/(?:^|[^*_])([*_])([^*_]+)\1$/, (state, match, start, end) => {
+          const [, delimiter, text] = match;
+          const delimiterPos = match[0].lastIndexOf(delimiter);
+          const tr = state.tr.delete(start + match.index! + delimiterPos, end);
+          const markStart = start + match.index! + delimiterPos;
+          const markEnd = markStart + text.length;
+          return tr.addMark(markStart, markEnd, schema.marks.em.create());
+        })
+      );
+      
+      // Code: `text`
+      rules.push(
+        new InputRule(/`([^`]+)`$/, (state, match, start, end) => {
+          const [, text] = match;
+          const tr = state.tr.delete(start + match.index!, end);
+          return tr.addMark(start + match.index!, start + match.index! + text.length, schema.marks.code.create());
+        })
+      );
+      
+      // Blockquote: > at start of line
+      rules.push(wrappingInputRule(/^\s*>\s$/, schema.nodes.blockquote));
+      
+      // Bullet list: -, *, or + at start of line
+      rules.push(
+        wrappingInputRule(/^\s*([-+*])\s$/, schema.nodes.bullet_list)
+      );
+      
+      // Ordered list: 1. at start of line
+      rules.push(
+        wrappingInputRule(/^\s*(\d+)\.\s$/, schema.nodes.ordered_list, match => ({order: +match[1]}),
+          (match, node) => node.childCount + node.attrs.order === +match[1])
+      );
+      
+      return inputRules({ rules });
     };
 
     const setupPlugins = () => {
       return [
-        ...exampleSetup({ 
-          schema,
-          menuBar: false,
-          history: true,
-          keymap: true
-        }),
+        buildInputRules(),
         keymap({
-          'Mod-b': () => toggleMark('strong'),
-          'Mod-i': () => toggleMark('em'),
-          'Mod-`': () => toggleMark('code')
-        })
+          'Mod-b': () => { toggleMarkCommand('strong'); return true; },
+          'Mod-i': () => { toggleMarkCommand('em'); return true; },
+          'Mod-`': () => { toggleMarkCommand('code'); return true; },
+          'Mod-Shift-s': () => { toggleMarkCommand('strikethrough'); return true; },
+          'Mod-k': () => { insertLink(); return true; },
+          'Mod-z': () => { handleUndo(); return true; },
+          'Mod-y': () => { handleRedo(); return true; },
+          'Mod-Shift-z': () => { handleRedo(); return true; },
+          'Mod-\\': () => { clearFormatting(); return true; },
+          'Tab': () => {
+            if (!editorRef.current) return false;
+            const { state } = editorRef.current;
+            const { $from } = state.selection;
+            
+            // Check if we're in a list
+            for (let i = $from.depth; i >= 0; i--) {
+              const node = $from.node(i);
+              if (node.type === schema.nodes.list_item) {
+                sinkListItem(schema.nodes.list_item)(state, editorRef.current.dispatch);
+                return true;
+              }
+            }
+            return false;
+          },
+          'Shift-Tab': () => {
+            if (!editorRef.current) return false;
+            const { state } = editorRef.current;
+            const { $from } = state.selection;
+            
+            // Check if we're in a list
+            for (let i = $from.depth; i >= 0; i--) {
+              const node = $from.node(i);
+              if (node.type === schema.nodes.list_item) {
+                liftListItem(schema.nodes.list_item)(state, editorRef.current.dispatch);
+                return true;
+              }
+            }
+            return false;
+          },
+          'Enter': () => {
+            if (!editorRef.current) return false;
+            const { state } = editorRef.current;
+            const { $from } = state.selection;
+            
+            // Check if we're in a list
+            for (let i = $from.depth; i >= 0; i--) {
+              const node = $from.node(i);
+              if (node.type === schema.nodes.list_item) {
+                return splitListItem(schema.nodes.list_item)(state, editorRef.current.dispatch);
+              }
+            }
+            return false;
+          }
+        }),
+        keymap(baseKeymap),
+        history()
       ];
     };
 
@@ -164,32 +531,52 @@ export const RichTextInput = forwardRef<RichTextInputRef, RichTextInputProps>(
             const newState = editorRef.current.state.apply(transaction);
             editorRef.current.updateState(newState);
             
-            // Update toolbar state based on marks at cursor position
-            const marks = newState.selection.$from.marks();
-            setIsBold(marks.some(m => m.type === schema.marks.strong));
-            setIsItalic(marks.some(m => m.type === schema.marks.em));
-            setIsCode(marks.some(m => m.type === schema.marks.code));
+            updateToolbarState(newState);
             
             if (onChange) {
               const content = newState.doc.textContent;
-              onChange(content);
+              const markdown = serializeToMarkdown(newState.doc);
+              onChange(content, markdown);
             }
           },
           handleKeyDown: (view, event) => {
             if (event.key === 'Enter' && !event.shiftKey && onSubmit && !isLoading) {
-              event.preventDefault();
-              onSubmit();
-              return true;
+              // Check if the content is not empty
+              const content = view.state.doc.textContent.trim();
+              if (content) {
+                event.preventDefault();
+                onSubmit();
+                return true;
+              }
             }
             return false;
+          },
+          attributes: {
+            class: 'prose prose-sm max-w-none focus:outline-none',
+            spellcheck: 'true'
           }
         });
 
-        // Set placeholder
-        const placeholder = document.createElement('span');
-        placeholder.className = 'placeholder';
-        placeholder.textContent = 'Send a message...';
-        containerRef.current.appendChild(placeholder);
+        // Add placeholder functionality
+        const updatePlaceholder = () => {
+          if (!containerRef.current || !editorRef.current) return;
+          const isEmpty = editorRef.current.state.doc.textContent.trim() === '';
+          
+          if (isEmpty) {
+            containerRef.current.setAttribute('data-placeholder', placeholder);
+          } else {
+            containerRef.current.removeAttribute('data-placeholder');
+          }
+        };
+
+        updatePlaceholder();
+        
+        // Update placeholder on changes
+        const originalDispatch = editorRef.current.dispatch;
+        editorRef.current.dispatch = (tr: Transaction) => {
+          originalDispatch(tr);
+          updatePlaceholder();
+        };
       }
 
       return () => {
@@ -198,13 +585,7 @@ export const RichTextInput = forwardRef<RichTextInputRef, RichTextInputProps>(
           editorRef.current = null;
         }
       };
-    }, []);
-
-    const [isBold, setIsBold] = useState(false);
-    const [isItalic, setIsItalic] = useState(false);
-    const [isCode, setIsCode] = useState(false);
-
-
+    }, [placeholder, onChange, onSubmit, isLoading, initialValue]);
 
     return (
       <div className="relative">
@@ -213,32 +594,120 @@ export const RichTextInput = forwardRef<RichTextInputRef, RichTextInputProps>(
             <button
               type="button"
               className={cx(styles.button, { [styles.active]: isBold })}
-              onClick={() => toggleMark('strong')}
+              onClick={() => toggleMarkCommand('strong')}
               title="Bold (Ctrl+B)"
+              disabled={isLoading}
             >
               <BoldIcon size={16} />
             </button>
             <button
               type="button"
               className={cx(styles.button, { [styles.active]: isItalic })}
-              onClick={() => toggleMark('em')}
+              onClick={() => toggleMarkCommand('em')}
               title="Italic (Ctrl+I)"
+              disabled={isLoading}
             >
               <ItalicIcon size={16} />
             </button>
             <button
               type="button"
+              className={cx(styles.button, { [styles.active]: isStrikethrough })}
+              onClick={() => toggleMarkCommand('strikethrough')}
+              title="Strikethrough (Ctrl+Shift+S)"
+              disabled={isLoading}
+            >
+              <StrikethroughIcon size={16} />
+            </button>
+            <button
+              type="button"
               className={cx(styles.button, { [styles.active]: isCode })}
-              onClick={() => toggleMark('code')}
+              onClick={() => toggleMarkCommand('code')}
               title="Code (Ctrl+`)"
+              disabled={isLoading}
             >
               <CodeIcon size={16} />
+            </button>
+          </div>
+          
+          <div className={styles['toolbar-group']}>
+            <button
+              type="button"
+              className={cx(styles.button, { [styles.active]: isList })}
+              onClick={() => toggleList('bullet')}
+              title="Bullet List"
+              disabled={isLoading}
+            >
+              <ListIcon size={16} />
+            </button>
+            <button
+              type="button"
+              className={cx(styles.button, { [styles.active]: isOrderedList })}
+              onClick={() => toggleList('ordered')}
+              title="Numbered List"
+              disabled={isLoading}
+            >
+              <ListOrderedIcon size={16} />
+            </button>
+            <button
+              type="button"
+              className={cx(styles.button, { [styles.active]: isBlockquote })}
+              onClick={toggleBlockquote}
+              title="Quote"
+              disabled={isLoading}
+            >
+              <QuoteIcon size={16} />
+            </button>
+          </div>
+          
+          <div className={styles['toolbar-group']}>
+            <button
+              type="button"
+              className={cx(styles.button, { [styles.active]: isLink })}
+              onClick={insertLink}
+              title="Insert Link (Ctrl+K)"
+              disabled={isLoading}
+            >
+              <LinkIcon size={16} />
+            </button>
+          </div>
+          
+          <div className={styles['toolbar-group']}>
+            <button
+              type="button"
+              className={styles.button}
+              onClick={clearFormatting}
+              title="Clear Formatting (Ctrl+\)"
+              disabled={isLoading}
+            >
+              <TypeIcon size={16} />
+            </button>
+          </div>
+          
+          <div className={styles['toolbar-group']}>
+            <button
+              type="button"
+              className={styles.button}
+              onClick={handleUndo}
+              title="Undo (Ctrl+Z)"
+              disabled={isLoading}
+            >
+              <UndoIcon size={16} />
+            </button>
+            <button
+              type="button"
+              className={styles.button}
+              onClick={handleRedo}
+              title="Redo (Ctrl+Y)"
+              disabled={isLoading}
+            >
+              <RedoIcon size={16} />
             </button>
           </div>
         </div>
         <div 
           className={cx(
-            'prosemirror-editor min-h-[24px] max-h-[calc(75dvh)] overflow-y-auto resize-none rounded-2xl !text-base bg-muted pb-10 dark:border-zinc-700 px-3 py-2',
+            'prosemirror-editor min-h-[60px] max-h-[calc(75dvh)] overflow-y-auto resize-none rounded-b-2xl !text-base bg-muted pb-10 dark:border-zinc-700 px-4 py-3',
+            styles.editor,
             className
           )}
           ref={containerRef}

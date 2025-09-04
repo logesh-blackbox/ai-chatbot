@@ -27,7 +27,7 @@ import { ArrowUpIcon, PaperclipIcon, StopIcon } from './icons';
 import { ImageCropper } from './image-cropper';
 import { PreviewAttachment } from './preview-attachment';
 import { Button } from './ui/button';
-import { Textarea } from './ui/textarea';
+import { RichTextInput, type RichTextInputRef } from './rich-text-input';
 import { SuggestedActions } from './suggested-actions';
 import equal from 'fast-deep-equal';
 
@@ -66,28 +66,9 @@ function PureMultimodalInput({
   ) => void;
   className?: string;
 }) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const richTextInputRef = useRef<RichTextInputRef>(null);
   const { width } = useWindowSize();
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      adjustHeight();
-    }
-  }, []);
-
-  const adjustHeight = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight + 2}px`;
-    }
-  };
-
-  const resetHeight = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = '98px';
-    }
-  };
+  const [markdownContent, setMarkdownContent] = useState('');
 
   const [localStorageInput, setLocalStorageInput] = useLocalStorage(
     'input',
@@ -95,12 +76,10 @@ function PureMultimodalInput({
   );
 
   useEffect(() => {
-    if (textareaRef.current) {
-      const domValue = textareaRef.current.value;
-      // Prefer DOM value over localStorage to handle hydration
-      const finalValue = domValue || localStorageInput || '';
-      setInput(finalValue);
-      adjustHeight();
+    // Initialize with localStorage value after mount
+    if (richTextInputRef.current && localStorageInput) {
+      richTextInputRef.current.setValue(localStorageInput);
+      setInput(localStorageInput);
     }
     // Only run once after hydration
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -110,28 +89,46 @@ function PureMultimodalInput({
     setLocalStorageInput(input);
   }, [input, setLocalStorageInput]);
 
-  const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(event.target.value);
-    adjustHeight();
-  };
+  const handleRichTextChange = useCallback((plainText: string, markdown: string) => {
+    setInput(plainText);
+    setMarkdownContent(markdown);
+  }, [setInput]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
   const [cropFile, setCropFile] = useState<File | null>(null);
 
   const submitForm = useCallback(() => {
+    // Get the markdown content before submitting
+    const currentMarkdown = richTextInputRef.current?.getMarkdownValue() || input;
+    
+    // Only submit if there's content
+    if (!currentMarkdown.trim() && attachments.length === 0) {
+      return;
+    }
+
     window.history.replaceState({}, '', `/chat/${chatId}`);
+
+    // Create a modified input that includes the markdown formatting
+    const formattedInput = currentMarkdown || input;
+    
+    // Temporarily set the formatted input for submission
+    const originalInput = input;
+    setInput(formattedInput);
 
     handleSubmit(undefined, {
       experimental_attachments: attachments,
     });
 
+    // Reset after submission
     setAttachments([]);
     setLocalStorageInput('');
-    resetHeight();
+    richTextInputRef.current?.clearContent();
+    setInput('');
+    setMarkdownContent('');
 
     if (width && width > 768) {
-      textareaRef.current?.focus();
+      richTextInputRef.current?.focus();
     }
   }, [
     attachments,
@@ -140,6 +137,8 @@ function PureMultimodalInput({
     setLocalStorageInput,
     width,
     chatId,
+    input,
+    setInput,
   ]);
 
   const uploadFile = async (file: File) => {
@@ -265,28 +264,20 @@ function PureMultimodalInput({
         </div>
       )}
 
-      <Textarea
-        ref={textareaRef}
+      <RichTextInput
+        ref={richTextInputRef}
         placeholder="Send a message..."
-        value={input}
-        onChange={handleInput}
-        className={cx(
-          'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 dark:border-zinc-700',
-          className,
-        )}
-        rows={2}
-        autoFocus
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-
-            if (isLoading) {
-              toast.error('Please wait for the model to finish its response!');
-            } else {
-              submitForm();
-            }
+        initialValue={input}
+        onChange={handleRichTextChange}
+        onSubmit={() => {
+          if (isLoading) {
+            toast.error('Please wait for the model to finish its response!');
+          } else {
+            submitForm();
           }
         }}
+        isLoading={isLoading}
+        className={className}
       />
 
       <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
