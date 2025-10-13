@@ -74,6 +74,10 @@ export function Chat({
           isReadonly={isReadonly}
         />
 
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-center py-3 text-sm font-medium shadow-md">
+          🚀 New version available! Discover the latest features and improvements.
+        </div>
+
         <Messages
           chatId={id}
           isLoading={isLoading}
