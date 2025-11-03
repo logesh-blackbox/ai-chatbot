@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackbox AI - 50% Discount</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 24px;
+            background-color: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .logo-icon {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #666, #999);
+            border-radius: 4px;
+        }
+
+        nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        nav a {
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: #fff;
+        }
+
+        /* Main Content */
+        .main-content {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .brand-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #555, #888);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+
+        .brand-title h1 {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: #888;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .modal {
+            background-color: #1a1a1a;
+            border-radius: 16px;
+            max-width: 440px;
+            width: 100%;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid #2a2a2a;
+        }
+
+        .modal-image {
+            position: relative;
+            height: 200px;
+            background:
+                radial-gradient(circle at 30% 40%, rgba(100, 100, 100, 0.15), transparent 40%),
+                radial-gradient(circle at 70% 60%, rgba(80, 80, 80, 0.15), transparent 40%),
+                linear-gradient(135deg, #0f0f0f, #1a1a1a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Matrix-style background effect */
+        .modal-image::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image:
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px);
+            opacity: 0.5;
+        }
+
+        .discount-badge {
+            position: relative;
+            background-color: #2a2a2a;
+            color: #fff;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: 500;
+            z-index: 1;
+            border: 1px solid #3a3a3a;
+        }
+
+        .modal-content {
+            padding: 32px;
+        }
+
+        .modal-content h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .modal-content p {
+            color: #999;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .continue-btn {
+            width: 100%;
+            padding: 14px 24px;
+            background-color: #fff;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .continue-btn:hover {
+            background-color: #f0f0f0;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+        }
+
+        .continue-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header {
+                padding: 12px 16px;
+            }
+
+            nav {
+                gap: 16px;
+            }
+
+            nav a {
+                font-size: 12px;
+            }
+
+            .modal {
+                margin: 20px;
+            }
+
+            .modal-content {
+                padding: 24px;
+            }
+
+            .discount-badge {
+                font-size: 18px;
+                padding: 14px 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <span>blackbox.ai</span>
+        </div>
+        <nav>
+            <a href="#pricing">Pricing</a>
+            <a href="#product">Product</a>
+            <a href="#agent">Agent</a>
+            <a href="#cli">CLI</a>
+            <a href="#ide">IDE</a>
+            <a href="#vscode">VSCode</a>
+            <a href="#api">API</a>
+            <a href="#mcp">MCP</a>
+            <a href="#builder">Builder</a>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="brand-title">
+            <div class="brand-icon"></div>
+            <h1>BLACKBOX AI</h1>
+        </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay">
+        <div class="modal">
+            <div class="modal-image">
+                <div class="discount-badge">You Get 50% Discount</div>
+            </div>
+            <div class="modal-content">
+                <h2>Claim Your 50% Discount Now!</h2>
+                <p>Limited time offer - Get 50% off on all premium plans. Upgrade now and unlock advanced AI features at half the price.</p>
+                <button class="continue-btn" onclick="handleContinue()">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleContinue() {
+            // Close modal or redirect to pricing page
+            document.querySelector('.modal-overlay').style.display = 'none';
+            // Or redirect: window.location.href = '/pricing';
+        }
+
+        // Close modal when clicking outside
+        document.querySelector('.modal-overlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelector('.modal-overlay').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
