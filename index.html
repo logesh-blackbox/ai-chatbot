@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackbox AI</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .navbar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #000;
+            border-bottom: 1px solid #333;
+            box-sizing: border-box;
+        }
+        .navbar-left {
+            display: flex;
+            align-items: center;
+        }
+        .navbar-left .logo {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-right: 20px;
+        }
+        .navbar-right {
+            display: flex;
+            gap: 20px;
+        }
+        .navbar-right a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            position: relative;
+        }
+        .blackbox-ai-section {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        .blackbox-ai-section .new-tag {
+            background-color: #333;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            margin-right: 10px;
+        }
+        .blackbox-ai-section .remote-agents {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+        .blackbox-ai-section .logo-text {
+            font-size: 2em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            padding: 30px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+        }
+        .modal-discount-header {
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='); /* Placeholder for textured background */
+            background-size: cover;
+            background-position: center;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            color: #fff;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        .modal-discount-header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%);
+            opacity: 0.2;
+        }
+        .modal-discount-header span {
+            position: relative;
+            z-index: 1;
+        }
+        .modal-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .modal-description {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+        .modal-button {
+            background-color: #007bff; /* A blue color, can be adjusted */
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .modal-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-left">
+            <div class="logo">blackbox.ai</div>
+            <a href="#">Pricing</a>
+            <a href="#">Product</a>
+            <a href="#">Agent</a>
+            <a href="#">CLI</a>
+            <a href="#">IDE</a>
+            <a href="#">VSCode</a>
+            <a href="#">API</a>
+            <a href="#">MCP</a>
+            <a href="#">Builder</a>
+        </div>
+        <div class="navbar-right">
+            <!-- Icons would go here, using placeholder for now -->
+            <span>⭐</span>
+            <span>G</span>
+            <span>M</span>
+            <span>N</span>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="blackbox-ai-section">
+            <div>
+                <span class="new-tag">New</span>
+                <a href="#" class="remote-agents">Try Remote Agents ></a>
+            </div>
+            <div class="logo-text">BLACKBOX AI</div>
+        </div>
+
+        <div class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-discount-header">
+                    <span>You Get 50% Discount</span>
+                </div>
+                <div class="modal-title">Claim Your 50% Discount Now!</div>
+                <div class="modal-description">
+                    Limited time offer - Get 50% off on all premium plans. Upgrade now
+                    and unlock advanced AI features at half the price.
+                </div>
+                <button class="modal-button">Continue</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
